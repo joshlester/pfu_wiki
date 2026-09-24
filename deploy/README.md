@@ -68,3 +68,24 @@ ssh bsvr1 'nomad-cli alloc exec <alloc-id> /bin/bash -c \
 
 Then use `flask --app otterwiki.server user password you@example.com` if you
 need to reset it later.
+
+### Runtime settings (on the volume, not in git)
+
+The wiki's `settings.cfg` lives on the volume at
+`_data/settings.cfg` (generated on first boot, not versioned). Current custom
+values beyond the entrypoint defaults:
+
+```ini
+READ_ACCESS = "REGISTERED"
+WRITE_ACCESS = "REGISTERED"
+ATTACHMENT_ACCESS = "REGISTERED"
+DISABLE_REGISTRATION = True
+SITE_NAME = "pfu"
+WIKILINK_STYLE = "LINKTITLE"   # pages use [[path/to/page|Label]] wiki-links
+```
+
+`WIKILINK_STYLE = "LINKTITLE"` matters: the wiki content (imported from
+`josh_wiki_storage`) uses `[[path|label]]` syntax, which is the LINKTITLE
+format. The OtterWiki default would render those as `[[label|path]]`, turning
+every internal link into a broken `/Label` href. If you ever rebuild the wiki
+fresh, re-add these lines after first boot.
