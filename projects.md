@@ -1,0 +1,4 @@
+
+# Projects
+
+[[projects/stockible|stockible]]

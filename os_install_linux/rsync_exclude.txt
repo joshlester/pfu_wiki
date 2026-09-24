@@ -1,0 +1,7 @@
+.*/
+node_modules/
+gwt-2.8.2/
+/snap/
+/applications/
+*.class
+

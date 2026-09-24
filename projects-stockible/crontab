@@ -1,0 +1,55 @@
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# m h dom mon dow user	command
+17 *	* * *	root    cd / && run-parts --report /etc/cron.hourly
+25 6	* * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+47 6	* * 7	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+52 6	1 * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+#
+
+# Run ASX scrapper 5 & 35 mins past the hour every weekday between 10am-4pm AEST
+#05 0-6 * * 1-5 root wget -t 1 --read-timeout=600 https://stockible.com.au/scrap/ASX
+#35 0-6 * * 1-5 root wget -t 1 --read-timeout=600 https://stockible.com.au/scrap/ASX
+
+#05 0-6 * * 1-5 root wget -t 1 --read-timeout=600 https://stockible.com.au/exchanges/ASX/stockticks --post-data ""
+#35 0-6 * * 1-5 root wget -t 1 --read-timeout=600 https://stockible.com.au/exchanges/ASX/stockticks --post-data ""
+
+05 0-6 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/app/v1/crawl-exchange?exchange=ASX --post-data ""
+35 0-6 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/app/v1/crawl-exchange?exchange=ASX --post-data ""
+
+# Run ASX stat scrapper 05 mins past the hour every weekday between 10am-4pm AEST
+05 0-6 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/app/v1/exchanges/ASX/entities/stats --post-data ""
+
+# Run ASX company scrpper at 1am every weekday
+# 0 15 * * 1-5 root wget -t 1 --read-timeout=1800 https://stockible.com.au/scrap/companies/ASX
+0 15 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/app/v1/crawl-entities?exchange=ASX --post-data ""
+
+# @ 01:25 - Add new ASX upcoming listings.
+25 15 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/v1/upcoming-listings/scrap?exchange=ASX --post-data ""
+
+# @ 01:45 - Migrate upcoming listings to listed entities.
+45 15 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/v1/upcoming-listings/migrate?exchange=ASX --post-data ""
+
+# @ 02:25 - Remove old ASX upcoming listings.
+25 16 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=600 https://stockible.com.au/v1/upcoming-listings/remove?exchange=ASX --post-data ""
+
+# Run standard linear regression timeframes for all stocks on ASX 
+0 17 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=10800 https://stockible.com.au/stock/analytics/linear-regression/ASX
+
+# Run listed entity update listed_on task at 5am every weekday
+# 0 19 * * 1-5 root wget -t 1 --read-timeout=7200 https://stockible.com.au/listed-entity/update/listed-on --post-data ""
+0 19 * * 1-5 root wget -q -O /dev/null -t 1 --read-timeout=7200 https://stockible.com.au/exchanges/asx/listed-entity/update?db_field_name=listed_on&db_field_type=date&src_field_name=listingDate --post-data ""
+
+#Run NASDAQ scrapper 5 mins past 4pm NY time every weekday.
+05 08 * * 2-6 root wget -q -O /dev/null -t 1 --read-timeout=86400 https://stockible.com.au/exchanges/NASDAQ/stockticks --post-data ""
+
+#Run NASDAQ IPO Calendar scrapper every weekday at 5pm NY time.
+0 09 * * 2-6 root wget -q -O /dev/null -t 1 --read-timeout=7200 https://stockible.com.au/scrap/nasdaq/ipo-calendar?useCurrentMonth=1 --post-data ""
+

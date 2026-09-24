@@ -1,0 +1,71 @@
+version: '3.9'
+services:
+  start:
+    image: '3dviz/rendivo_db:0.1'
+    container_name: db
+    deploy:
+      placement:
+        constraints: [node.labels.db == start]
+    environment:
+      MARIADB_DATABASE: rendivo_db
+      MARIADB_ROOT_PASSWORD: ApplePieSpagetti99
+    networks: 
+      - rendivo_net
+    restart: unless-stopped
+    # https://mariadb.com/kb/en/configuring-mariadb-galera-cluster/
+    #
+    # Network Ports
+    # Galera Cluster needs access to the following ports:
+    # Standard MariaDB Port (default: 3306) - For MySQL client connections and State Snapshot Transfers that use the mysqldump method. This can be changed by setting port.
+    # Galera Replication Port (default: 4567) - For Galera Cluster replication traffic, multicast replication uses both UDP transport and TCP on this port. Can be changed by setting wsrep_node_address.
+    # IST Port (default: 4568) - For Incremental State Transfers. Can be changed by setting ist.recv_addr in wsrep_provider_options.
+    # SST Port (default: 4444) - For all State Snapshot Transfer methods other than mysqldump. Can be changed by setting wsrep_sst_receive_address. 
+    ports:
+      - '3306:3306'
+      - '4567:4567'
+      - '4568:4568'
+      - '4444:4444'
+    volumes:
+      - /var/lib/mysql:/var/lib/mysql
+    
+    command: "--wsrep-new-cluster"
+  
+  joiner:
+    image: '3dviz/rendivo_db:0.1'
+    container_name: db
+    deploy:
+      placement:
+        constraints: [node.labels.db == joiner]
+    environment:
+      MARIADB_DATABASE: rendivo_db
+      MARIADB_ROOT_PASSWORD: ApplePieSpagetti99
+    networks: 
+      - rendivo_net
+    restart: unless-stopped
+    volumes:
+      - /var/lib/mysql:/var/lib/mysql
+  
+  adminer:
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  # https://github.com/dockersamples/docker-swarm-visualizer
+  # The visualiser has been constrained to only run on manager nodes.
+  visualiser:
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    image: dockersamples/visualizer:stable
+    ports:
+      - 8081:8080
+    volumes:   
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+networks:
+  rendivo_net:
+    name: rendivo_net
